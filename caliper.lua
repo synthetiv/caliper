@@ -1,6 +1,9 @@
 -- caliper
 --
--- oscillator calibration helper
+-- tuner with reference tone,
+-- frequency counter,
+-- v/oct calibration helper
+--
 -- e1 - set reference freq
 -- e2 - set reference tone amp
 -- e3 - set voltage offset
