@@ -30,7 +30,11 @@ out_volts = 0
 
 diff = 0
 
-fine = 1
+held_keys = {
+	fine = false,
+	down = false,
+	up = false
+}
 
 dirty = false
 
@@ -189,17 +193,30 @@ end
 
 function key(n, z)
 	if n == 1 then
-		fine = z == 1 and 0.05 or 1
-	elseif z == 1 then
-		if n == 2 then
-			params:delta('offset', -10)
-		elseif n == 3 then
-			params:delta('offset', 10)
+		held_keys.fine = z == 1
+	elseif n == 2 then
+		held_keys.down = z == 1
+		if z == 1 then
+			if held_keys.up then
+				params:set('offset', 0)
+			else
+				params:delta('offset', -10)
+			end
+		end
+	elseif n == 3 then
+		held_keys.up = z == 1
+		if z == 1 then
+			if held_keys.down then
+				params:set('offset', 0)
+			else
+				params:delta('offset', 10)
+			end
 		end
 	end
 end
 
 function enc(n, d)
+	local fine = held_keys.fine and 0.05 or 1
 	if n == 1 then
 		params:delta('reference_frequency', d * fine / 4)
 	elseif n == 2 then
