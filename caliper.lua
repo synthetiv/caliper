@@ -8,7 +8,7 @@
 -- k2/k3 - lower/raise voltage
 --         offset in octaves
 
-engine.name = 'ReferenceTuner'
+engine.name = 'Caliper'
 
 musicutil = require 'musicutil'
 filters = require 'filters'
@@ -146,24 +146,28 @@ end
 function draw_tuner()
 	local y = 56.5
 	local abscents = math.floor(math.abs(diff * 1200) + 0.5)
+	local base_level = 2
+	local notch_level = 4
+	local notch_height = 2
+	if in_freq_detected then
+		base_level = math.max(2, 4 - abscents)
+		notch_level = math.max(7, 15 - abscents)
+		notch_height = math.max(1, 4 - abscents)
+	end
 
-	screen.move(0, y)
-	screen.line(128, y)
-	screen.level(math.max(2, 4 - abscents))
-	screen.stroke()
 	screen.move(63.5, y - 2.5)
 	screen.line(63.5, y + 2.5)
 	screen.level(1)
 	screen.stroke()
 
-	local notch_height = math.max(1, 4 - abscents)
+	screen.move(0, y)
+	screen.line(128, y)
+	screen.level(base_level)
+	screen.stroke()
+
 	screen.move(63.5 + math.max(-63, math.min(63, math.atan(diff * 3) * 44)), y - notch_height)
 	screen.line_rel(0, notch_height * 2 + 1)
-	if in_freq_detected then
-		screen.level(math.max(7, 15 - abscents))
-	else
-		screen.level(4)
-	end
+	screen.level(notch_level)
 	screen.stroke()
 end
 

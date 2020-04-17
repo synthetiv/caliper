@@ -1,4 +1,4 @@
-Engine_ReferenceTuner : CroneEngine {
+Engine_Caliper : CroneEngine {
 
 	var sine_synth;
 	var pitch_in_buffer;
