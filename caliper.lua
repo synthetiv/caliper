@@ -8,19 +8,19 @@
 -- k2/k3 - lower/raise voltage
 --         offset in octaves
 
-engine.name = 'Analyst'
+engine.name = 'ReferenceTuner'
 
 musicutil = require 'musicutil'
 filters = require 'filters'
 
 log2 = math.log(2)
-c = musicutil.note_num_to_freq(60) -- middle C (TODO: right?)
+c = musicutil.note_num_to_freq(60)
 volts_per_octave = 1.2
 
 in_freq_poll = nil
 in_freq_detected = false
 in_freq = 0
-in_filter = filters.mean.new(8)
+in_filter = filters.mean.new(4)
 
 reference_freq = c
 
@@ -31,6 +31,8 @@ out_volts = 0
 diff = 0
 
 fine = 1
+
+dirty = false
 
 redraw_metro = metro.init{
 	time = 1 / 15,
@@ -43,12 +45,14 @@ redraw_metro = metro.init{
 }
 
 function update_in_freq(new_freq)
+	local was_detected = in_freq_detected
 	in_freq_detected = new_freq > 0
 	if in_freq_detected then
 		in_freq = in_filter:next(new_freq)
 		compare_freqs()
+	elseif was_detected then
+		dirty = true
 	end
-	dirty = true
 end
 
 function update_output()
@@ -68,7 +72,7 @@ end
 
 function crow_setup()
 	crow.clear()
-	crow.output[1].slew = 0.01 -- match TestSine's lag
+	crow.output[1].slew = 0.02 -- match ReferenceTuner's sine lag
 	crow.output[1].shape = 'linear'
 end
 
@@ -124,62 +128,57 @@ function init()
 	crow.add = crow_setup
 	crow_setup()
 	
-	pitch_poll = poll.set('pitch_analyst_l', update_in_freq)
-	pitch_poll.time = 1 / 15
-	pitch_poll:start()
+	in_freq_poll = poll.set('input_freq', update_in_freq)
+	in_freq_poll.time = 1 / 15
+	in_freq_poll:start()
 
-	dirty = true
 	redraw_metro:start()
+end
 
+function draw_line(n, label, value)
+	local y = n * 9 + 7
+	screen.move(14, y)
+	screen.text(label)
+	screen.move(114, y)
+	screen.text_right(string.format('%.2f', value))
+end
+
+function draw_tuner()
+	local y = 56.5
+	local abscents = math.floor(math.abs(diff * 1200) + 0.5)
+
+	screen.move(0, y)
+	screen.line(128, y)
+	screen.level(math.max(2, 4 - abscents))
+	screen.stroke()
+	screen.move(63.5, y - 2.5)
+	screen.line(63.5, y + 2.5)
+	screen.level(1)
+	screen.stroke()
+
+	local notch_height = math.max(1, 4 - abscents)
+	screen.move(63.5 + math.max(-63, math.min(63, math.atan(diff * 3) * 44)), y - notch_height)
+	screen.line_rel(0, notch_height * 2 + 1)
+	if in_freq_detected then
+		screen.level(math.max(7, 15 - abscents))
+	else
+		screen.level(4)
+	end
+	screen.stroke()
 end
 
 function redraw()
 	screen.clear()
 
-	local l = 14
-	local r = 114
-
-	local tuner = 54.5
-
-	if in_freq_detected then
-		screen.level(10)
-	else
-		screen.level(2)
-	end
-	screen.move(l, 12)
-	screen.text('in freq:')
-	screen.move(r, 12)
-	screen.text_right(string.format('%.2f', in_freq))
+	screen.level(in_freq_detected and 10 or 2)
+	draw_line(1, 'in freq:', in_freq)
 
 	screen.level(10)
-	screen.move(l, 21)
-	screen.text('reference:')
-	screen.move(r, 21)
-	screen.text_right(string.format('%.2f', out_freq))
+	draw_line(2, 'reference:', out_freq)
+	draw_line(3, 'volts:', out_volts)
+	draw_line(4, 'diff (cents):', diff * 1200)
 
-	screen.move(l, 30)
-	screen.text('volts:')
-	screen.move(r, 30)
-	screen.text_right(string.format('%.2f', out_volts))
-
-	screen.move(l, 39)
-	screen.text('diff (cents):')
-	screen.move(r, 39)
-	screen.text_right(string.format('%.2f', diff * 1200))
-
-	screen.move(0, tuner)
-	screen.line(128, tuner)
-	screen.level(2)
-	screen.stroke()
-	screen.move(63.5, tuner - 2.5)
-	screen.line(63.5, tuner + 2.5)
-	screen.level(1)
-	screen.stroke()
-
-	screen.move(63.5 + math.atan(diff) * 45, tuner - 2.5)
-	screen.line_rel(0, 5)
-	screen.level(10)
-	screen.stroke()
+	draw_tuner()
 
 	screen.update()
 end
@@ -202,7 +201,7 @@ function enc(n, d)
 	elseif n == 2 then
 		params:delta('reference_tone_amp', d)
 	elseif n == 3 then
-		params:delta('offset', d * fine)
+		params:delta('offset', d * fine / 2)
 	end
 end
 
