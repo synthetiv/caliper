@@ -20,7 +20,10 @@ volts_per_octave = 1.2
 in_freq_poll = nil
 in_freq_detected = false
 in_freq = 0
-in_filter = filters.mean.new(4)
+in_filter = nil
+dummy_filter = {
+	next = function(_, v) return v end
+}
 
 reference_freq = c
 
@@ -86,10 +89,12 @@ function init()
 	params:set('monitor_mode', 2) -- mono
 	params:set('reverb', 1) -- off
 
+	params:add_separator()
+
 	params:add{
 		type = 'control',
 		id = 'reference_tone_amp',
-		name = 'reference tone amp',
+		name = 'ref. tone amp',
 		controlspec = controlspec.DB,
 		action = function(value)
 			engine.sine_amp(util.dbamp(value))
@@ -97,8 +102,8 @@ function init()
 	}
 	params:add{
 		type = 'control',
-		id = 'reference_frequency',
-		name = 'reference frequency',
+		id = 'reference_freq',
+		name = 'ref. frequency',
 		controlspec = controlspec.new(27.5, 3520, 'exp', 0, c, 'Hz'),
 		action = function(value)
 			reference_freq = value
@@ -118,12 +123,27 @@ function init()
 	params:add{
 		type = 'option',
 		id = 'volts_per_octave',
-		name = 'volts per octave',
+		name = 'volts/octave',
 		options = { '1', '1.2' },
 		default = 1,
 		action = function(value)
 			volts_per_octave = value == 1 and 1 or 1.2
 			update_output()
+		end
+	}
+	params:add{
+		type = 'number',
+		id = 'in freq smoothing',
+		name = 'in freq smoothing',
+		min = 0,
+		max = 6,
+		default = 2,
+		action = function(value)
+			if value == 0 then
+				in_filter = dummy_filter
+			else
+				in_filter = filters.mean.new(value)
+			end
 		end
 	}
 		
@@ -218,7 +238,7 @@ end
 function enc(n, d)
 	local fine = held_keys.fine and 0.05 or 1
 	if n == 1 then
-		params:delta('reference_frequency', d * fine / 4)
+		params:delta('reference_freq', d * fine / 4)
 	elseif n == 2 then
 		params:delta('reference_tone_amp', d)
 	elseif n == 3 then
