@@ -2,6 +2,10 @@
 
 Caliper is volt-per-octave calibration assistant for Norns + Crow.
 
+![screenshot: tuning...](https://synthetiv.github.io/misc/caliper-out.png)
+
+![screenshot: tuned](https://synthetiv.github.io/misc/caliper-in.png)
+
 ## how?
 
 Plug in a Crow, patch output 1 to the 1v/oct input of the device you want to calibrate, and plug your test subject's output into Norns's audio input (probably through an attenuator).
