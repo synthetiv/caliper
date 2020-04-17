@@ -159,12 +159,12 @@ function init()
 	redraw_metro:start()
 end
 
-function draw_line(n, label, value)
+function draw_line(n, label, value, show_sign)
 	local y = n * 9 + 7
 	screen.move(14, y)
 	screen.text(label)
 	screen.move(114, y)
-	screen.text_right(string.format('%.2f', value))
+	screen.text_right(string.format(show_sign and '%+.2f' or '%.2f', value))
 end
 
 function draw_tuner()
@@ -203,8 +203,8 @@ function redraw()
 
 	screen.level(10)
 	draw_line(2, 'reference:', out_freq)
-	draw_line(3, 'volts:', out_volts)
-	draw_line(4, 'diff (cents):', diff * 1200)
+	draw_line(3, 'volts:', out_volts, true)
+	draw_line(4, 'diff (cents):', diff * 1200, true)
 
 	draw_tuner()
 
