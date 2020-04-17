@@ -8,7 +8,7 @@
 -- k2/k3 - lower/raise voltage
 --         offset in octaves
 
-engine.name = 'TestSine'
+engine.name = 'Analyst'
 
 musicutil = require 'musicutil'
 filters = require 'filters'
@@ -48,12 +48,13 @@ function update_in_freq(new_freq)
 		in_freq = in_filter:next(new_freq)
 		compare_freqs()
 	end
+	dirty = true
 end
 
 function update_output()
 	local ratio = math.pow(2, out_offset)
 	out_freq = reference_freq * ratio
-	engine.hz(out_freq)
+	engine.sine_freq(out_freq)
 	out_volts = out_offset * volts_per_octave
 	crow.output[1].volts = out_volts
 	compare_freqs()
@@ -83,14 +84,14 @@ function init()
 		name = 'reference tone amp',
 		controlspec = controlspec.DB,
 		action = function(value)
-			engine.amp(util.dbamp(value))
+			engine.sine_amp(util.dbamp(value))
 		end
 	}
 	params:add{
 		type = 'control',
 		id = 'reference_frequency',
 		name = 'reference frequency',
-		controlspec = controlspec.new(110, 1760, 'exp', 0, c, 'Hz'),
+		controlspec = controlspec.new(27.5, 3520, 'exp', 0, c, 'Hz'),
 		action = function(value)
 			reference_freq = value
 			update_output()
@@ -123,7 +124,7 @@ function init()
 	crow.add = crow_setup
 	crow_setup()
 	
-	pitch_poll = poll.set('pitch_in_l', update_in_freq)
+	pitch_poll = poll.set('pitch_analyst_l', update_in_freq)
 	pitch_poll.time = 1 / 15
 	pitch_poll:start()
 
@@ -185,7 +186,7 @@ end
 
 function key(n, z)
 	if n == 1 then
-		fine = z == 1 and 0.1 or 1
+		fine = z == 1 and 0.05 or 1
 	elseif z == 1 then
 		if n == 2 then
 			params:delta('offset', -10)
@@ -197,7 +198,7 @@ end
 
 function enc(n, d)
 	if n == 1 then
-		params:delta('reference_frequency', d * fine)
+		params:delta('reference_frequency', d * fine / 4)
 	elseif n == 2 then
 		params:delta('reference_tone_amp', d)
 	elseif n == 3 then
