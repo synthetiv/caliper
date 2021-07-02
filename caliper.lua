@@ -152,7 +152,7 @@ function init()
 		
 	params:bang()
 
-	crow.add = crow_setup
+	norns.crow.add = crow_setup
 	crow_setup()
 	
 	in_freq_poll = poll.set('input_freq', update_in_freq)
